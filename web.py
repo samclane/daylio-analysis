@@ -1,10 +1,10 @@
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, widgetbox
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, HBar, Line
 from bokeh.models.ranges import Range1d
 from bokeh.models.widgets import Slider, Button, Div, RadioButtonGroup
 from bokeh.plotting import figure
-from bokeh.palettes import Spectral6
+import pandas as pd
 
 import read_and_ml as rml
 
@@ -18,12 +18,12 @@ plot_mood_scatter = figure(plot_height=400, plot_width=850,
                            x_axis_label='entry #', y_axis_label='mood',
                            tools="reset,pan,save,box_zoom,wheel_zoom",
                            tooltips=SCATTER_TOOLTIPS)
-BAR_TOOLTIPS = [("count", "@top")]
-plot_mood_bar = figure(plot_height=400, plot_width=850,
+BAR_TOOLTIPS = [("count", "@right")]
+plot_mood_bar = figure(plot_height=400, plot_width=400,
                        title="Mood Distribution", toolbar_location="above",
-                       x_axis_label='mood', y_axis_label='count',
-                       tools="reset,pan,save,box_zoom,wheel_zoom",
-                       x_range=(-1.25, 1.25), tooltips=BAR_TOOLTIPS)
+                       y_axis_label='mood', x_axis_label='count',
+                       tools="reset,save",
+                       y_range=(-1, 1), tooltips=BAR_TOOLTIPS)
 # Plot Control Buttons
 plot_sim = Button(label="Run")
 plot_clear = Button(label="Clear")
@@ -65,9 +65,16 @@ plot_mood_scatter.x_range = xrange_data
 plot_mood_scatter.y_range = yrange_data
 
 # Set up bar graph
-bars = d_data["mood"].value_counts()
-plot_mood_bar.vbar(x=bars.index, top=bars, width=0.5, bottom=0, color=Spectral6[:len(set(bars.index))])
-plot_mood_bar.xaxis.major_label_overrides = rml.MOOD_INT_TO_STR
+# source_bars = d_data["mood"].value_counts()
+source_bars = ColumnDataSource(dict(y=d_data["mood"].value_counts().index, right=d_data["mood"].value_counts()))
+pred_line = ColumnDataSource(dict(y=d_data["mood"].value_counts().index, x=[0, ] * len(d_data["mood"].value_counts())))
+hbar_glyph = HBar(y="y", right="right", left=0, height=0.3, fill_color='#1d76B4')
+prebar_glyph = Line(y="y", x="x", line_color='red', line_width=3)
+plot_mood_bar.add_glyph(source_bars, hbar_glyph)
+plot_mood_bar.yaxis.major_label_overrides = rml.MOOD_INT_TO_STR
+plot_mood_bar.ygrid.grid_line_color = None
+
+
 # Callbacks
 def update_plot(*args, **kwargs):
     # Pull params from controls
@@ -89,7 +96,7 @@ def update_plot(*args, **kwargs):
     else:
         raise Exception("model value not in list")
 
-    y_pred = clf.predict(d_features)
+    y_pred = pd.Series(clf.predict(d_features))
 
     source_data.data = dict(x=x, y=y, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
     pred_data.data = dict(x=x, y=y_pred, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
@@ -100,10 +107,17 @@ def update_plot(*args, **kwargs):
 
     plot_mood_scatter.scatter('x', 'y', source=pred_data, fill_color='red', line_color=None)
 
+    source_bars.data = dict(y=d_data["mood"].value_counts().index, right=d_data["mood"].value_counts())
+    pred_line.data = dict(y=sorted(y_pred.value_counts().index), x=y_pred.value_counts(sort=False))
+    plot_mood_bar.add_glyph(source_bars, hbar_glyph)
+    plot_mood_bar.add_glyph(pred_line, prebar_glyph)
+
 
 def clear_plot():
     source_data.data = dict(x=[], y=[])
     pred_data.data = dict(x=[], y=[])
+    source_bars.data = dict(y=[], right=[])
+    pred_line.data = dict(y=[], x=[])
 
 
 plot_sim.on_click(update_plot)
@@ -111,7 +125,7 @@ plot_clear.on_click(clear_plot)
 
 # Page Layout
 col_inputs = column(plot_ctls, ctl_inputs)
-col_plots = column(plot_mood_scatter, plot_mood_bar)
-row_page = row(col_inputs, col_plots, width=1200)
+row_plots = row(plot_mood_scatter, plot_mood_bar)
+row_page = row(col_inputs, row_plots, width=1200)
 curdoc().add_root(row_page)
 curdoc().title = "Daylio Data Display"
