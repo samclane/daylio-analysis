@@ -8,6 +8,9 @@ import pandas as pd
 
 import read_and_ml as rml
 
+Y_MIN = min(rml.MOOD_INT_TO_STR.keys())
+Y_MAX = max(rml.MOOD_INT_TO_STR.keys())
+
 # GUI
 # Plot- Regression Data
 SCATTER_TOOLTIPS = [("index", "$index{0}"),
@@ -23,7 +26,7 @@ plot_mood_bar = figure(plot_height=400, plot_width=400,
                        title="Mood Distribution", toolbar_location="above",
                        y_axis_label='mood', x_axis_label='count',
                        tools="reset,save",
-                       y_range=(-1, 1), tooltips=BAR_TOOLTIPS)
+                       y_range=(Y_MIN, Y_MAX), tooltips=BAR_TOOLTIPS)
 # Plot Control Buttons
 plot_sim = Button(label="Run")
 plot_clear = Button(label="Clear")
@@ -59,7 +62,7 @@ pred_data = ColumnDataSource(
 plot_mood_scatter.scatter('x', 'y', source=source_data)
 
 xrange_data = Range1d(bounds=[None, None], start=0, end=len(y))
-yrange_data = Range1d(bounds=[None, None], start=-1, end=1)
+yrange_data = Range1d(bounds=[None, None], start=Y_MIN, end=Y_MAX)
 
 plot_mood_scatter.x_range = xrange_data
 plot_mood_scatter.y_range = yrange_data
@@ -102,13 +105,13 @@ def update_plot(*args, **kwargs):
     pred_data.data = dict(x=x, y=y_pred, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
     xrange_data.start = 0
     xrange_data.end = max(x)
-    yrange_data.start = -1
-    yrange_data.end = 1
+    yrange_data.start = Y_MIN
+    yrange_data.end = Y_MAX
 
     plot_mood_scatter.scatter('x', 'y', source=pred_data, fill_color='red', line_color=None)
 
     source_bars.data = dict(y=d_data["mood"].value_counts().index, right=d_data["mood"].value_counts())
-    pred_line.data = dict(y=sorted(y_pred.value_counts().index), x=y_pred.value_counts(sort=False))
+    pred_line.data = dict(y=sorted(y_pred.value_counts().index), x=y_pred.value_counts().sort_index())
     plot_mood_bar.add_glyph(source_bars, hbar_glyph)
     plot_mood_bar.add_glyph(pred_line, prebar_glyph)
 

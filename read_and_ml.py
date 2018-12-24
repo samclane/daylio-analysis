@@ -75,7 +75,7 @@ def feature_select(X: pd.DataFrame, y: pd.Series, n_est=NUM_ESTIMATORS) -> pd.Da
 
 
 def regress_and_report(X: pd.DataFrame, y: pd.Series, clf, test_ratio=TEST_RATIO) -> object:
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=test_ratio)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_ratio)
     clf.fit(X_train, y_train)
     y_pred = pd.Series(clf.predict(X_test))
     print(clf.__class__)
