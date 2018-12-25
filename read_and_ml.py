@@ -10,6 +10,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_v
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
+from sklearn.linear_model import ARDRegression
 
 # PARAMETER DEFAULTS
 NUM_ESTIMATORS = 50
@@ -19,7 +20,7 @@ C_VALUE = 7
 NUM_NEIGHBORS = 5
 NUM_NODES = 50
 NUM_HIDDEN_LAYERS = 1
-MOOD_STR_TO_INT = {'awful': -1, 'bad': -0.5, 'meh': 0, 'good': 0.5, 'rad': 1}
+MOOD_STR_TO_INT = {'awful': -1, 'bad': -.5, 'meh': 0, 'good': .5, 'rad': 1}
 MOOD_INT_TO_STR = {n: s for s, n in MOOD_STR_TO_INT.items()}
 
 
@@ -105,6 +106,12 @@ def regress_knn(X: pd.DataFrame, y: pd.Series, K_val=None) -> neighbors.KNeighbo
 
 def regress_mlp(X: pd.DataFrame, y: pd.Series, n_nodes=NUM_NODES, n_layers=NUM_HIDDEN_LAYERS) -> MLPRegressor:
     clf = MLPRegressor((n_nodes, n_layers))
+    regress_and_report(X, y, clf)
+    return clf
+
+
+def regress_ard(X: pd.DataFrame, y: pd.Series):
+    clf = ARDRegression(n_iter=400)
     regress_and_report(X, y, clf)
     return clf
 

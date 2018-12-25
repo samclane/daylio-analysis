@@ -1,10 +1,10 @@
+import pandas as pd
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, widgetbox
 from bokeh.models import ColumnDataSource, HBar, Line
 from bokeh.models.ranges import Range1d
-from bokeh.models.widgets import Slider, Button, Div, RadioButtonGroup
+from bokeh.models.widgets import Slider, Button, Div, RadioButtonGroup, Toggle
 from bokeh.plotting import figure
-import pandas as pd
 
 import read_and_ml as rml
 
@@ -33,8 +33,9 @@ plot_clear = Button(label="Clear")
 plot_ctls = column(plot_sim, plot_clear)
 # Main Control Buttons
 ctl_model_title = Div(text="<h3>ML Model</h3>")
-ctl_model = RadioButtonGroup(labels=['SVM', 'KNN', 'MLP'], active=0)
+ctl_model = RadioButtonGroup(labels=['SVM', 'KNN', 'MLP', 'ARD'], active=0)
 ctl_title = Div(text="<h3>Parameters</h3>")
+ctl_feat_reduce = Toggle(label="Reduced Featureset")
 ctl_est = Slider(title="Number of Estimators", value=rml.NUM_ESTIMATORS,
                  start=1, end=100, step=1)
 ctl_pct_test = Slider(title="Percent Test", value=rml.TEST_RATIO,
@@ -49,11 +50,13 @@ ctl_num_nodes = Slider(title="Num. nodes", value=rml.NUM_NODES,
                        start=1, end=100, step=1)
 ctl_hidden = Slider(title="Num. hidden layers", value=rml.NUM_HIDDEN_LAYERS,
                     start=1, end=50, step=1)
-ctl_inputs = widgetbox(ctl_model_title, ctl_model, ctl_title, ctl_est, ctl_pct_test, ctl_kernel, ctl_c_val,
-                       ctl_neighbors, ctl_num_nodes, ctl_hidden)
+ctl_inputs = widgetbox(ctl_model_title, ctl_model, ctl_title, ctl_feat_reduce, ctl_est, ctl_pct_test, ctl_kernel,
+                       ctl_c_val, ctl_neighbors, ctl_num_nodes, ctl_hidden)
 # Data Sources and Initialization
 d_data = rml.preprocess(rml.read_file("daylio_export.csv"))
 d_features = rml.engineer_features(d_data)
+if ctl_feat_reduce.active:
+    d_features = rml.feature_select(d_features, d_data["mood"])
 x, y = range(len(d_data)), d_data["mood"]
 
 source_data = ColumnDataSource(data=dict(x=x, y=y, timestamp=d_data["date"] + ", " + d_data["year"].apply(str)))
@@ -80,6 +83,7 @@ plot_mood_bar.ygrid.grid_line_color = None
 
 # Callbacks
 def update_plot(*args, **kwargs):
+    global d_features
     # Pull params from controls
     num_est = ctl_est.value
     test_pct = ctl_pct_test.value  # No way for this to get passed
@@ -89,17 +93,26 @@ def update_plot(*args, **kwargs):
     num_nodes = ctl_num_nodes.value
     num_hidden = ctl_hidden.value
 
+    if ctl_feat_reduce.active:
+        X_features = rml.feature_select(d_features, d_data["mood"], num_est)
+    else:
+        X_features = d_features
+
+    print(X_features.keys())
+
     model = ctl_model.labels[ctl_model.active]
     if model == 'SVM':
-        clf = rml.regress_svm(d_features, y, kernel_val=def_kern, C_val=c_val)
+        clf = rml.regress_svm(X_features, y, kernel_val=def_kern, C_val=c_val)
     elif model == "KNN":
-        clf = rml.regress_knn(d_features, y, K_val=num_neigh)
+        clf = rml.regress_knn(X_features, y, K_val=num_neigh)
     elif model == "MLP":
-        clf = rml.regress_mlp(d_features, y, num_nodes, num_hidden)
+        clf = rml.regress_mlp(X_features, y, num_nodes, num_hidden)
+    elif model == "ARD":
+        clf = rml.regress_ard(X_features, y)
     else:
         raise Exception("model value not in list")
 
-    y_pred = pd.Series(clf.predict(d_features))
+    y_pred = pd.Series(clf.predict(X_features))
 
     source_data.data = dict(x=x, y=y, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
     pred_data.data = dict(x=x, y=y_pred, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
