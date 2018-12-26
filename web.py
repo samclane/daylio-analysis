@@ -3,7 +3,7 @@ from bokeh.io import curdoc
 from bokeh.layouts import column, row, widgetbox
 from bokeh.models import ColumnDataSource, HBar, Line
 from bokeh.models.ranges import Range1d
-from bokeh.models.widgets import Slider, Button, Div, RadioButtonGroup, Toggle
+from bokeh.models.widgets import Slider, Button, Div, RadioButtonGroup, Toggle, Paragraph
 from bokeh.plotting import figure
 
 import read_and_ml as rml
@@ -52,12 +52,15 @@ ctl_hidden = Slider(title="Num. hidden layers", value=rml.NUM_HIDDEN_LAYERS,
                     start=1, end=50, step=1)
 ctl_inputs = widgetbox(ctl_model_title, ctl_model, ctl_title, ctl_feat_reduce, ctl_est, ctl_pct_test, ctl_kernel,
                        ctl_c_val, ctl_neighbors, ctl_num_nodes, ctl_hidden)
+disp_features = Paragraph(text="")
+
 # Data Sources and Initialization
 d_data = rml.preprocess(rml.read_file("daylio_export.csv"))
 d_features = rml.engineer_features(d_data)
 if ctl_feat_reduce.active:
     d_features = rml.feature_select(d_features, d_data["mood"])
 x, y = range(len(d_data)), d_data["mood"]
+disp_features.text = ", ".join([c.title() for c in d_features.keys()])
 
 source_data = ColumnDataSource(data=dict(x=x, y=y, timestamp=d_data["date"] + ", " + d_data["year"].apply(str)))
 pred_data = ColumnDataSource(
@@ -86,29 +89,32 @@ def update_plot(*args, **kwargs):
     global d_features
     # Pull params from controls
     num_est = ctl_est.value
-    test_pct = ctl_pct_test.value  # No way for this to get passed
+    test_pct = ctl_pct_test.value
     def_kern = ctl_kernel.labels[ctl_kernel.active]
     c_val = ctl_c_val.value
     num_neigh = ctl_neighbors.value
     num_nodes = ctl_num_nodes.value
     num_hidden = ctl_hidden.value
 
+    # Check if we're using reduced features
     if ctl_feat_reduce.active:
         X_features = rml.feature_select(d_features, d_data["mood"], num_est)
     else:
         X_features = d_features
 
-    print(X_features.keys())
+    # Generate feature display string
+    disp_features.text = ', '.join([c.title() for c in list(X_features.keys())])
 
+    # Run selected classifier on data
     model = ctl_model.labels[ctl_model.active]
     if model == 'SVM':
-        clf = rml.regress_svm(X_features, y, kernel_val=def_kern, C_val=c_val)
+        clf = rml.regress_svm(X_features, y, kernel_val=def_kern, C_val=c_val, test_ratio=test_pct)
     elif model == "KNN":
-        clf = rml.regress_knn(X_features, y, K_val=num_neigh)
+        clf = rml.regress_knn(X_features, y, K_val=num_neigh, test_ratio=test_pct)
     elif model == "MLP":
-        clf = rml.regress_mlp(X_features, y, num_nodes, num_hidden)
+        clf = rml.regress_mlp(X_features, y, num_nodes, num_hidden, test_ratio=test_pct)
     elif model == "ARD":
-        clf = rml.regress_ard(X_features, y)
+        clf = rml.regress_ard(X_features, y, test_ratio=test_pct)
     else:
         raise Exception("model value not in list")
 
@@ -129,6 +135,34 @@ def update_plot(*args, **kwargs):
     plot_mood_bar.add_glyph(pred_line, prebar_glyph)
 
 
+def change_model(*args, **kwargs):
+    model = ctl_model.labels[ctl_model.active]
+    if model == "SVM":
+        ctl_kernel.disabled = False
+        ctl_c_val.disabled = False
+        ctl_neighbors.disabled = True
+        ctl_num_nodes.disabled = True
+        ctl_hidden.disabled = True
+    elif model == "KNN":
+        ctl_kernel.disabled = True
+        ctl_c_val.disabled = True
+        ctl_neighbors.disabled = False
+        ctl_num_nodes.disabled = True
+        ctl_hidden.disabled = True
+    elif model == "MLP":
+        ctl_kernel.disabled = True
+        ctl_c_val.disabled = True
+        ctl_neighbors.disabled = True
+        ctl_num_nodes.disabled = False
+        ctl_hidden.disabled = False
+    elif model == "ARD":
+        ctl_kernel.disabled = True
+        ctl_c_val.disabled = True
+        ctl_neighbors.disabled = True
+        ctl_num_nodes.disabled = True
+        ctl_hidden.disabled = True
+
+
 def clear_plot():
     source_data.data = dict(x=[], y=[])
     pred_data.data = dict(x=[], y=[])
@@ -136,12 +170,17 @@ def clear_plot():
     pred_line.data = dict(y=[], x=[])
 
 
+# Disable controls initially
+change_model()
+
+ctl_model.on_click(change_model)
+ctl_feat_reduce.on_click(update_plot)
 plot_sim.on_click(update_plot)
 plot_clear.on_click(clear_plot)
 
 # Page Layout
 col_inputs = column(plot_ctls, ctl_inputs)
 row_plots = row(plot_mood_scatter, plot_mood_bar)
-row_page = row(col_inputs, row_plots, width=1200)
+row_page = row(col_inputs, row_plots, disp_features, width=1200)
 curdoc().add_root(row_page)
 curdoc().title = "Daylio Data Display"

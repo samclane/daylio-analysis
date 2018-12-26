@@ -88,31 +88,31 @@ def regress_and_report(X: pd.DataFrame, y: pd.Series, clf, test_ratio=TEST_RATIO
     return clf
 
 
-def regress_svm(X: pd.DataFrame, y: pd.Series, kernel_val=KERNEL_DEFAULT, C_val=C_VALUE) -> SVR:
+def regress_svm(X: pd.DataFrame, y: pd.Series, kernel_val=KERNEL_DEFAULT, C_val=C_VALUE, test_ratio=TEST_RATIO) -> SVR:
     # n_features = len(set(y.values))
     clf = SVR(kernel=kernel_val, C=C_val)
-    regress_and_report(X, y, clf)
+    regress_and_report(X, y, clf, test_ratio)
     return clf
 
 
-def regress_knn(X: pd.DataFrame, y: pd.Series, K_val=None) -> neighbors.KNeighborsRegressor:
+def regress_knn(X: pd.DataFrame, y: pd.Series, K_val=None, test_ratio=TEST_RATIO) -> neighbors.KNeighborsRegressor:
     if K_val is None:
         K_val = NUM_NEIGHBORS
     clf = neighbors.KNeighborsRegressor(K_val,
                                         weights='uniform')  # k = len(set(y)) is a shorthand heuristic I invented
-    regress_and_report(X, y, clf)
+    regress_and_report(X, y, clf, test_ratio)
     return clf
 
 
-def regress_mlp(X: pd.DataFrame, y: pd.Series, n_nodes=NUM_NODES, n_layers=NUM_HIDDEN_LAYERS) -> MLPRegressor:
+def regress_mlp(X: pd.DataFrame, y: pd.Series, n_nodes=NUM_NODES, n_layers=NUM_HIDDEN_LAYERS, test_ratio=TEST_RATIO) -> MLPRegressor:
     clf = MLPRegressor((n_nodes, n_layers))
-    regress_and_report(X, y, clf)
+    regress_and_report(X, y, clf, test_ratio)
     return clf
 
 
-def regress_ard(X: pd.DataFrame, y: pd.Series):
+def regress_ard(X: pd.DataFrame, y: pd.Series, test_ratio=TEST_RATIO):
     clf = ARDRegression(n_iter=400)
-    regress_and_report(X, y, clf)
+    regress_and_report(X, y, clf, test_ratio)
     return clf
 
 
