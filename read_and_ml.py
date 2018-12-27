@@ -6,7 +6,6 @@ import pandas as pd
 from sklearn import neighbors
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.feature_selection import SelectFromModel
-from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_variance_score, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
@@ -78,13 +77,6 @@ def feature_select(X: pd.DataFrame, y: pd.Series, n_est=NUM_ESTIMATORS) -> pd.Da
 def regress_and_report(X: pd.DataFrame, y: pd.Series, clf, test_ratio=TEST_RATIO) -> object:
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_ratio)
     clf.fit(X_train, y_train)
-    y_pred = pd.Series(clf.predict(X_test))
-    print(clf.__class__)
-    print("explained_variance_score:", explained_variance_score(y_test, y_pred))
-    print("mean_absolute_error", mean_absolute_error(y_test, y_pred))
-    print("mean_square_error", mean_squared_error(y_test, y_pred))
-    print("r2_score", r2_score(y_test, y_pred))
-    print("")
     return clf
 
 

@@ -53,6 +53,7 @@ ctl_hidden = Slider(title="Num. hidden layers", value=rml.NUM_HIDDEN_LAYERS,
 ctl_inputs = widgetbox(ctl_model_title, ctl_model, ctl_title, ctl_feat_reduce, ctl_est, ctl_pct_test, ctl_kernel,
                        ctl_c_val, ctl_neighbors, ctl_num_nodes, ctl_hidden)
 disp_features = Paragraph(text="")
+disp_score = Paragraph(text="Score: --")
 
 # Data Sources and Initialization
 d_data = rml.preprocess(rml.read_file("daylio_export.csv"))
@@ -119,6 +120,7 @@ def update_plot(*args, **kwargs):
         raise Exception("model value not in list")
 
     y_pred = pd.Series(clf.predict(X_features))
+    disp_score.text = f"Score {clf.score(X_features, y):.3}"
 
     source_data.data = dict(x=x, y=y, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
     pred_data.data = dict(x=x, y=y_pred, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
@@ -181,6 +183,6 @@ plot_clear.on_click(clear_plot)
 # Page Layout
 col_inputs = column(plot_ctls, ctl_inputs)
 row_plots = row(plot_mood_scatter, plot_mood_bar)
-row_page = row(col_inputs, row_plots, disp_features, width=1200)
+row_page = row(col_inputs, row_plots, column(disp_features, disp_score), width=1200)
 curdoc().add_root(row_page)
 curdoc().title = "Daylio Data Display"
