@@ -65,7 +65,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def feature_select(X: pd.DataFrame, y: pd.Series, n_est=NUM_ESTIMATORS) -> pd.DataFrame:
-    clf = ExtraTreesRegressor(n_estimators=n_est)
+    clf = ExtraTreesRegressor(n_estimators=n_est, random_state=42)
     clf = clf.fit(X, y)
 
     model = SelectFromModel(clf, prefit=True)
@@ -75,7 +75,7 @@ def feature_select(X: pd.DataFrame, y: pd.Series, n_est=NUM_ESTIMATORS) -> pd.Da
 
 
 def regress_and_report(X: pd.DataFrame, y: pd.Series, clf, test_ratio=TEST_RATIO) -> object:
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_ratio)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_ratio, random_state=42)
     clf.fit(X_train, y_train)
     return clf
 
@@ -97,12 +97,12 @@ def regress_knn(X: pd.DataFrame, y: pd.Series, K_val=None, test_ratio=TEST_RATIO
 
 
 def regress_mlp(X: pd.DataFrame, y: pd.Series, n_nodes=NUM_NODES, n_layers=NUM_HIDDEN_LAYERS, test_ratio=TEST_RATIO) -> MLPRegressor:
-    clf = MLPRegressor((n_nodes, n_layers))
+    clf = MLPRegressor((n_nodes, n_layers), random_state=42)
     regress_and_report(X, y, clf, test_ratio)
     return clf
 
 
-def regress_ard(X: pd.DataFrame, y: pd.Series, test_ratio=TEST_RATIO):
+def regress_ard(X: pd.DataFrame, y: pd.Series, test_ratio=TEST_RATIO) -> ARDRegression:
     clf = ARDRegression(n_iter=400)
     regress_and_report(X, y, clf, test_ratio)
     return clf

@@ -28,9 +28,9 @@ plot_mood_bar = figure(plot_height=400, plot_width=400,
                        tools="reset,save",
                        y_range=(Y_MIN, Y_MAX), tooltips=BAR_TOOLTIPS)
 # Plot Control Buttons
-plot_sim = Button(label="Run")
+plot_run = Button(label="Run")
 plot_clear = Button(label="Clear")
-plot_ctls = column(plot_sim, plot_clear)
+plot_ctls = column(plot_run, plot_clear)
 # Main Control Buttons
 ctl_model_title = Div(text="<h3>ML Model</h3>")
 ctl_model = RadioButtonGroup(labels=['SVM', 'KNN', 'MLP', 'ARD'], active=0)
@@ -39,11 +39,11 @@ ctl_feat_reduce = Toggle(label="Reduced Featureset")
 ctl_est = Slider(title="Number of Estimators", value=rml.NUM_ESTIMATORS,
                  start=1, end=100, step=1)
 ctl_pct_test = Slider(title="Percent Test", value=rml.TEST_RATIO,
-                      start=.05, end=1, step=.05)
+                      start=.1, end=1, step=.1)
 KERNELS = ['linear', 'poly', 'rbf', 'sigmoid']
 ctl_kernel = RadioButtonGroup(labels=KERNELS, active=KERNELS.index(rml.KERNEL_DEFAULT))
 ctl_c_val = Slider(title="C Value", value=rml.C_VALUE,
-                   start=.1, end=30, step=.1)
+                   start=.5, end=30, step=.5)
 ctl_neighbors = Slider(title="Num Neighbors", value=rml.NUM_NEIGHBORS,
                        start=1, end=30, step=1)
 ctl_num_nodes = Slider(title="Num. nodes", value=rml.NUM_NODES,
@@ -163,6 +163,7 @@ def change_model(*args, **kwargs):
         ctl_neighbors.disabled = True
         ctl_num_nodes.disabled = True
         ctl_hidden.disabled = True
+    update_plot()
 
 
 def clear_plot():
@@ -172,13 +173,25 @@ def clear_plot():
     pred_line.data = dict(y=[], x=[])
 
 
+def update_plot_signature(attr, old, new):
+    # print(attr, old, new)
+    update_plot()
+
+
 # Disable controls initially
 change_model()
 
+plot_run.on_click(update_plot)
+plot_clear.on_click(clear_plot)
 ctl_model.on_click(change_model)
 ctl_feat_reduce.on_click(update_plot)
-plot_sim.on_click(update_plot)
-plot_clear.on_click(clear_plot)
+ctl_est.on_change('value', update_plot_signature)
+ctl_pct_test.on_change('value', update_plot_signature)
+ctl_kernel.on_click(update_plot)
+ctl_c_val.on_change('value', update_plot_signature)
+ctl_neighbors.on_change('value', update_plot_signature)
+ctl_num_nodes.on_change('value', update_plot_signature)
+ctl_hidden.on_change('value', update_plot_signature)
 
 # Page Layout
 col_inputs = column(plot_ctls, ctl_inputs)
