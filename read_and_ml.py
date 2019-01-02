@@ -11,6 +11,8 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 from sklearn.linear_model import ARDRegression
 
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
 # PARAMETER DEFAULTS
 NUM_ESTIMATORS = 50
 TEST_RATIO = .25
@@ -63,6 +65,11 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     features["weekend"] = df["weekend"]
     features["yesterday"] = df["mood"].shift(-1).fillna(df["mood"].mode()[0])
     features["tomorrow"] = df["mood"].shift(1).fillna(df["mood"].mode()[0])
+
+    # Note Sentiment Analysis
+    sid = SentimentIntensityAnalyzer()
+    features["sentiment"] = df["note"].fillna("").apply(lambda x: sid.polarity_scores(x)["compound"])
+
     return features
 
 
