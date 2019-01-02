@@ -57,7 +57,7 @@ disp_score = Paragraph(text="Score: --")
 
 # Data Sources and Initialization
 d_data = rml.preprocess(rml.read_file("daylio_export.csv"))
-d_features = rml.engineer_features(d_data)
+d_features = rml.extract_features(d_data)
 if ctl_feat_reduce.active:
     d_features = rml.feature_select(d_features, d_data["mood"])
 x, y = range(len(d_data)), d_data["mood"]
@@ -185,13 +185,13 @@ plot_run.on_click(update_plot)
 plot_clear.on_click(clear_plot)
 ctl_model.on_click(change_model)
 ctl_feat_reduce.on_click(update_plot)
-ctl_est.on_change('value', update_plot_signature)
-ctl_pct_test.on_change('value', update_plot_signature)
+#ctl_est.on_change('value', update_plot_signature)
+#ctl_pct_test.on_change('value', update_plot_signature)
 ctl_kernel.on_click(update_plot)
-ctl_c_val.on_change('value', update_plot_signature)
-ctl_neighbors.on_change('value', update_plot_signature)
-ctl_num_nodes.on_change('value', update_plot_signature)
-ctl_hidden.on_change('value', update_plot_signature)
+#ctl_c_val.on_change('value', update_plot_signature)
+#ctl_neighbors.on_change('value', update_plot_signature)
+#ctl_num_nodes.on_change('value', update_plot_signature)
+#ctl_hidden.on_change('value', update_plot_signature)
 
 # Page Layout
 col_inputs = column(plot_ctls, ctl_inputs)

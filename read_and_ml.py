@@ -58,9 +58,11 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     features = binarize_activities(df)
     features["weekend"] = df["weekend"]
+    features["yesterday"] = df["mood"].shift(-1).fillna(df["mood"].mode()[0])
+    features["tomorrow"] = df["mood"].shift(1).fillna(df["mood"].mode()[0])
     return features
 
 
@@ -111,7 +113,7 @@ def regress_ard(X: pd.DataFrame, y: pd.Series, test_ratio=TEST_RATIO) -> ARDRegr
 def main() -> int:
     data = read_file("daylio_export.csv")
     data = preprocess(data)
-    features = engineer_features(data)
+    features = extract_features(data)
     X, y = features, data["mood"]
     X_reduced = feature_select(X, y)
 
