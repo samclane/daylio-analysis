@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 from sklearn.linear_model import ARDRegression
+from sklearn.preprocessing import PolynomialFeatures
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
@@ -48,27 +49,30 @@ def binarize_activities(df: pd.DataFrame) -> pd.DataFrame:
 def generate_features(df: pd.DataFrame) -> pd.DataFrame:
     df["timestamp"] = df.apply(lambda row: row_datetime_to_timestamp(row), axis=1)
     df["weekend"] = df.apply(lambda row: row["weekday"] in ["Saturday", "Sunday"], axis=1)
+    df["yesterday"] = df["mood"].shift(-1).fillna(df["mood"].mode()[0])
+    df["tomorrow"] = df["mood"].shift(1).fillna(df["mood"].mode()[0])
+    # Note Sentiment Analysis
+    sid = SentimentIntensityAnalyzer()
+    df["sentiment"] = df["note"].fillna("").apply(lambda x: sid.polarity_scores(x)["compound"])
     return df
 
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
-    # create new column that's purely timestamp
+    df["mood"] = df["mood"].map(MOOD_STR_TO_INT)
     df = generate_features(df)
     df = df.dropna(subset=["activities"]).reset_index(drop=True)
     df["activities"] = df["activities"].apply(lambda x: [t.strip() for t in x.split('|')])
-    df["mood"] = df["mood"].map(MOOD_STR_TO_INT)
     return df
 
 
 def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     features = binarize_activities(df)
-    features["weekend"] = df["weekend"]
-    features["yesterday"] = df["mood"].shift(-1).fillna(df["mood"].mode()[0])
-    features["tomorrow"] = df["mood"].shift(1).fillna(df["mood"].mode()[0])
 
-    # Note Sentiment Analysis
-    sid = SentimentIntensityAnalyzer()
-    features["sentiment"] = df["note"].fillna("").apply(lambda x: sid.polarity_scores(x)["compound"])
+    # Feature Cross
+    p = PolynomialFeatures(include_bias=False)
+    X = p.fit_transform(df[["yesterday", "sentiment", "tomorrow"]]).T
+    for i, n in enumerate(p.get_feature_names(input_features=["yesterday", "sentiment", "tomorrow"])):
+        features[n] = X[i]
 
     return features
 
