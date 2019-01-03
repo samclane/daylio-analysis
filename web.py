@@ -5,6 +5,7 @@ from bokeh.models import ColumnDataSource, HBar, Line
 from bokeh.models.ranges import Range1d
 from bokeh.models.widgets import Slider, Button, Div, RadioButtonGroup, Toggle, Paragraph
 from bokeh.plotting import figure
+from bokeh.transform import linear_cmap
 
 import read_and_ml as rml
 
@@ -27,6 +28,12 @@ plot_mood_bar = figure(plot_height=400, plot_width=400,
                        y_axis_label='mood', x_axis_label='count',
                        tools="reset,save",
                        y_range=(Y_MIN, Y_MAX), tooltips=BAR_TOOLTIPS)
+FEATURE_TOOLTIPS = [("mood", "@mood")]
+plot_feature_scatter = figure(plot_height=450, plot_width=850,
+                              title="t-SNE Features", toolbar_location="above",
+                              x_axis_label="x", y_axis_label="y",
+                              tools="reset,pan,save,box_zoom,wheel_zoom",
+                              tooltips=FEATURE_TOOLTIPS)
 # Plot Control Buttons
 plot_run = Button(label="Run")
 plot_clear = Button(label="Clear")
@@ -75,7 +82,6 @@ plot_mood_scatter.x_range = xrange_data
 plot_mood_scatter.y_range = yrange_data
 
 # Set up bar graph
-# source_bars = d_data["mood"].value_counts()
 source_bars = ColumnDataSource(dict(y=d_data["mood"].value_counts().index, right=d_data["mood"].value_counts()))
 pred_line = ColumnDataSource(dict(y=d_data["mood"].value_counts().index, x=[0, ] * len(d_data["mood"].value_counts())))
 hbar_glyph = HBar(y="y", right="right", left=0, height=0.3, fill_color='#1d76B4')
@@ -83,6 +89,12 @@ prebar_glyph = Line(y="y", x="x", line_color='red', line_width=3)
 plot_mood_bar.add_glyph(source_bars, hbar_glyph)
 plot_mood_bar.yaxis.major_label_overrides = rml.MOOD_INT_TO_STR
 plot_mood_bar.ygrid.grid_line_color = None
+
+# Set up feature embeddings display
+tsne_results = rml.tsne_projection(d_features)
+tsne = ColumnDataSource(data=dict(x=tsne_results[:, 0], y=tsne_results[:, 1], mood=d_data["mood"]))
+tsne_min, tsne_max = rml.np.min(tsne), rml.np.max(tsne)
+plot_feature_scatter.scatter('x', 'y', source=tsne, fill_color=linear_cmap('mood', 'Viridis256', -1, 1))
 
 
 # Callbacks
@@ -136,6 +148,9 @@ def update_plot(*args, **kwargs):
     plot_mood_bar.add_glyph(source_bars, hbar_glyph)
     plot_mood_bar.add_glyph(pred_line, prebar_glyph)
 
+    tsne_results = rml.tsne_projection(X_features)
+    tsne.data = dict(x=tsne_results[:, 0], y=tsne_results[:, 1], mood=d_data["mood"])
+
 
 def change_model(*args, **kwargs):
     model = ctl_model.labels[ctl_model.active]
@@ -171,6 +186,7 @@ def clear_plot():
     pred_data.data = dict(x=[], y=[])
     source_bars.data = dict(y=[], right=[])
     pred_line.data = dict(y=[], x=[])
+    tsne.data = dict(y=[], x=[])
 
 
 def update_plot_signature(attr, old, new):
@@ -185,17 +201,12 @@ plot_run.on_click(update_plot)
 plot_clear.on_click(clear_plot)
 ctl_model.on_click(change_model)
 ctl_feat_reduce.on_click(update_plot)
-#ctl_est.on_change('value', update_plot_signature)
-#ctl_pct_test.on_change('value', update_plot_signature)
 ctl_kernel.on_click(update_plot)
-#ctl_c_val.on_change('value', update_plot_signature)
-#ctl_neighbors.on_change('value', update_plot_signature)
-#ctl_num_nodes.on_change('value', update_plot_signature)
-#ctl_hidden.on_change('value', update_plot_signature)
+
 
 # Page Layout
 col_inputs = column(plot_ctls, ctl_inputs)
 row_plots = row(plot_mood_scatter, plot_mood_bar)
-row_page = row(col_inputs, row_plots, column(disp_features, disp_score), width=1200)
+row_page = row(col_inputs, column(row_plots, plot_feature_scatter), column(disp_features, disp_score), width=1200)
 curdoc().add_root(row_page)
 curdoc().title = "Daylio Data Display"

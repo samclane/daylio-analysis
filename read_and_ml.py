@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn import neighbors
+from sklearn import neighbors, manifold
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import train_test_split
@@ -120,6 +120,12 @@ def regress_ard(X: pd.DataFrame, y: pd.Series, test_ratio=TEST_RATIO) -> ARDRegr
     regress_and_report(X, y, clf, test_ratio)
     return clf
 
+
+def tsne_projection(X):
+    tsne = manifold.TSNE(n_components=2, init='pca', random_state=42)
+    X_tsne = tsne.fit_transform(X)
+
+    return X_tsne
 
 def main() -> int:
     data = read_file("daylio_export.csv")
