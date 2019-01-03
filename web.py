@@ -43,13 +43,13 @@ ctl_pct_test = Slider(title="Percent Test", value=rml.TEST_RATIO,
 KERNELS = ['linear', 'poly', 'rbf', 'sigmoid']
 ctl_kernel = RadioButtonGroup(labels=KERNELS, active=KERNELS.index(rml.KERNEL_DEFAULT))
 ctl_c_val = Slider(title="C Value", value=rml.C_VALUE,
-                   start=.5, end=30, step=.5)
+                   start=.5, end=1000, step=.5)
 ctl_neighbors = Slider(title="Num Neighbors", value=rml.NUM_NEIGHBORS,
-                       start=1, end=30, step=1)
-ctl_num_nodes = Slider(title="Num. nodes", value=rml.NUM_NODES,
                        start=1, end=100, step=1)
+ctl_num_nodes = Slider(title="Num. nodes", value=rml.NUM_NODES,
+                       start=1, end=500, step=1)
 ctl_hidden = Slider(title="Num. hidden layers", value=rml.NUM_HIDDEN_LAYERS,
-                    start=1, end=50, step=1)
+                    start=1, end=500, step=1)
 ctl_inputs = widgetbox(ctl_model_title, ctl_model, ctl_title, ctl_feat_reduce, ctl_est, ctl_pct_test, ctl_kernel,
                        ctl_c_val, ctl_neighbors, ctl_num_nodes, ctl_hidden)
 disp_features = Paragraph(text="")
