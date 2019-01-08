@@ -99,6 +99,7 @@ plot_feature_scatter.scatter('x', 'y', source=tsne, fill_color=linear_cmap('mood
 
 # Callbacks
 def update_plot(*args, **kwargs):
+    """ Update all UI graphs based on new UI state """
     global d_features
     # Pull params from controls
     num_est = ctl_est.value
@@ -131,9 +132,11 @@ def update_plot(*args, **kwargs):
     else:
         raise Exception("model value not in list")
 
+    # Generate predictions and score
     y_pred = pd.Series(clf.predict(X_features))
     disp_score.text = f"Score {clf.score(X_features, y):.3}"
 
+    # Update main plot with predictions
     source_data.data = dict(x=x, y=y, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
     pred_data.data = dict(x=x, y=y_pred, timestamp=d_data["date"] + ", " + d_data["year"].apply(str))
     xrange_data.start = 0
@@ -143,16 +146,19 @@ def update_plot(*args, **kwargs):
 
     plot_mood_scatter.scatter('x', 'y', source=pred_data, fill_color='red', line_color=None)
 
+    # Update cumulative distribution graphs
     source_bars.data = dict(y=d_data["mood"].value_counts().index, right=d_data["mood"].value_counts())
     pred_line.data = dict(y=sorted(y_pred.value_counts().index), x=y_pred.value_counts().sort_index())
     plot_mood_bar.add_glyph(source_bars, hbar_glyph)
     plot_mood_bar.add_glyph(pred_line, prebar_glyph)
 
+    # Update feature tSNE plot
     tsne_results = rml.tsne_projection(X_features)
     tsne.data = dict(x=tsne_results[:, 0], y=tsne_results[:, 1], mood=d_data["mood"])
 
 
 def change_model(*args, **kwargs):
+    """ Update controls based on currently selected model """
     model = ctl_model.labels[ctl_model.active]
     if model == "SVM":
         ctl_kernel.disabled = False
