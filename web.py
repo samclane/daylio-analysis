@@ -34,6 +34,9 @@ plot_feature_scatter = figure(plot_height=450, plot_width=850,
                               x_axis_label="x", y_axis_label="y",
                               tools="reset,pan,save,box_zoom,wheel_zoom",
                               tooltips=FEATURE_TOOLTIPS)
+# Disclaimer
+disp_disclaimer = Div(text="<p><i>This website has not been evaluated by the Food and Drug Administration. This "
+                           "website is not intended to diagnose, treat, cure, or prevent any disease.")
 # Plot Control Buttons
 plot_run = Button(label="Run")
 plot_clear = Button(label="Clear")
@@ -211,7 +214,7 @@ ctl_kernel.on_click(update_plot)
 
 
 # Page Layout
-col_inputs = column(plot_ctls, ctl_inputs)
+col_inputs = column(plot_ctls, ctl_inputs, disp_disclaimer)
 row_plots = row(plot_mood_scatter, plot_mood_bar)
 row_page = row(col_inputs, column(row_plots, plot_feature_scatter), column(disp_features, disp_score), width=1200)
 curdoc().add_root(row_page)
